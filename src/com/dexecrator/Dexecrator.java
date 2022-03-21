@@ -14,7 +14,7 @@
  *	You should have received a copy of the GNU General Public License
  *	along with Dexecrator.  If not, see <http://www.gnu.org/licenses/>.
  *
- *	Authors: see <https://github.com/DalvikVM/Dexecrator>
+ *	Authors: see <https://github.com/DalvikJVM/Dexecrator>
  */
 
 package com.dexecrator;
