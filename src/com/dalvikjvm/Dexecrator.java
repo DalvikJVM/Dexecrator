@@ -39,6 +39,9 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class Dexecrator {
+    // Update this when patcher has a significant change that can fix something already patched
+    public static int OUTPUT_FORMAT_VERSION = 0;
+
     static class EntryData
     {
         byte[] data;
