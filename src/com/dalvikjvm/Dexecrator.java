@@ -29,6 +29,8 @@ import org.objectweb.asm.util.TraceMethodVisitor;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.io.*;
+import java.lang.reflect.Field;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.jar.JarEntry;
 import java.util.jar.JarInputStream;
@@ -314,6 +316,10 @@ public class Dexecrator {
             JarInputStream in = new JarInputStream(new FileInputStream(jarURL));
             ZipOutputStream zout = new ZipOutputStream(new CheckedOutputStream(new FileOutputStream(outputURL), new Adler32()));
 
+            Field namesField = ZipOutputStream.class.getDeclaredField("names");
+            namesField.setAccessible(true);
+            HashSet<String> names = (HashSet<String>)namesField.get(zout);
+
             JarEntry entry;
             while ((entry = in.getNextJarEntry()) != null) {
                 // Check if file is needed
@@ -334,6 +340,10 @@ public class Dexecrator {
 
                 ZipEntry zipEntry = new ZipEntry(name);
                 zout.putNextEntry(zipEntry);
+
+                // HACK: Clear names to allow duplicate entries
+                names.clear();
+
                 zout.write(classData, 0, classData.length);
                 zout.closeEntry();
             }
