@@ -31,6 +31,8 @@ import org.objectweb.asm.util.TraceMethodVisitor;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.io.*;
+import java.math.BigInteger;
+import java.security.MessageDigest;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.zip.Adler32;
@@ -50,6 +52,7 @@ public class Dexecrator {
 
     private static Printer printer = new Textifier();
     private static TraceMethodVisitor mp = new TraceMethodVisitor(printer);
+    private static String lastHash;
 
     private static final int OPCODE_INT2BYTE = 145;
     private static final int OPCODE_INT2CHAR = 146;
@@ -291,7 +294,7 @@ public class Dexecrator {
         return writer.toByteArray();
     }
 
-    public static boolean fetch(String jarURL, String outputURL) {
+    public static boolean patch(String jarURL, String outputURL) {
         if (jarURL.endsWith(".class")) {
             File classFile = new File(jarURL);
             byte[] data = new byte[(int)classFile.length()];
@@ -310,6 +313,10 @@ public class Dexecrator {
                 FileOutputStream stream = new FileOutputStream(outputURL);
                 stream.write(data);
                 stream.close();
+
+                MessageDigest digest = MessageDigest.getInstance("SHA-256");
+                digest.update(data);
+                lastHash = new BigInteger(1, digest.digest()).toString(16);
             } catch (Exception e) {
                 return false;
             }
@@ -321,6 +328,7 @@ public class Dexecrator {
             ZipArchiveInputStream in = new ZipArchiveInputStream(new FileInputStream(jarURL));
             ZipOutputStream zout = new ZipOutputStream(new CheckedOutputStream(new FileOutputStream(outputURL), new Adler32()));
             HashMap<String, EntryData> zipEntries = new HashMap<String, EntryData>();
+            MessageDigest digest = MessageDigest.getInstance("SHA-256");
 
             ZipArchiveEntry e;
             while ((e = in.getNextZipEntry()) != null) {
@@ -353,17 +361,25 @@ public class Dexecrator {
                 ZipEntry zipEntry = new ZipEntry(name);
                 zout.putNextEntry(zipEntry);
                 zout.write(entryData.data, 0, entryData.data.length);
+                digest.update(entryData.data, 0, entryData.data.length);
                 zout.closeEntry();
             }
             in.close();
             zout.finish();
             zout.close();
             zipEntries.clear();
+            lastHash = new BigInteger(1, digest.digest()).toString(16);
         } catch (Exception e) {
             e.printStackTrace();
             return false;
         }
+
         return true;
+    }
+
+    public static String getLastPatchHash()
+    {
+        return lastHash;
     }
 
     public static void main(String args[]) {
@@ -372,7 +388,7 @@ public class Dexecrator {
 
         System.out.println("Loading Java file at '" + jarPath + "'");
 
-        fetch(jarPath, outputPath);
+        patch(jarPath, outputPath);
 
         System.out.println("Finished, exported to '" + outputPath + "'");
 
