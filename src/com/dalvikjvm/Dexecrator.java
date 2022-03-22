@@ -19,6 +19,8 @@
 
 package com.dalvikjvm;
 
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassWriter;
 import org.objectweb.asm.Opcodes;
@@ -313,15 +315,16 @@ public class Dexecrator {
         }
 
         try {
-            JarInputStream in = new JarInputStream(new FileInputStream(jarURL));
+            ZipArchiveInputStream in = new ZipArchiveInputStream(new FileInputStream(jarURL));
             ZipOutputStream zout = new ZipOutputStream(new CheckedOutputStream(new FileOutputStream(outputURL), new Adler32()));
 
             Field namesField = ZipOutputStream.class.getDeclaredField("names");
             namesField.setAccessible(true);
             HashSet<String> names = (HashSet<String>)namesField.get(zout);
+            namesField.setAccessible(false);
 
-            JarEntry entry;
-            while ((entry = in.getNextJarEntry()) != null) {
+            ZipArchiveEntry entry;
+            while ((entry = in.getNextZipEntry()) != null) {
                 // Check if file is needed
                 String name = entry.getName();
 
