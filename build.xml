@@ -6,7 +6,6 @@
 	<property name="bin.dir" value="bin" />
 	<property name="lib.dir" value="lib" />
 
-	<property name="jar.main-class" value="launcher" />
 	<property name="jar.name" value="${ant.project.name}.jar" />
 	<property name="jar.file" value="${dist.dir}/${jar.name}" />
 	
@@ -26,16 +25,8 @@
 	<target name="dist" depends="compile">
 		<mkdir dir="${bin.dir}" />
 		<mkdir dir="${dist.dir}" />
-		
-		<jar destfile="${build.dir}/deps.jar">
-			<zipgroupfileset dir="lib" includes="*.jar" />
-        </jar>
 
-		<jar destfile="${jar.file}" basedir="${main.build.dir}">
-			<manifest>
-				<attribute name="Main-Class" value="${jar.main-class}"/>
-			</manifest>
-		</jar>
+		<jar destfile="${jar.file}" basedir="${main.build.dir}" />
 	</target>
 
 	<target name="distrun" depends="dist">
