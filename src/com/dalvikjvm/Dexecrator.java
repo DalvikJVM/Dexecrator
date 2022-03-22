@@ -31,17 +31,20 @@ import org.objectweb.asm.util.TraceMethodVisitor;
 import org.objectweb.asm.tree.ClassNode;
 
 import java.io.*;
-import java.lang.reflect.Field;
-import java.util.HashSet;
+import java.util.HashMap;
 import java.util.Iterator;
-import java.util.jar.JarEntry;
-import java.util.jar.JarInputStream;
 import java.util.zip.Adler32;
 import java.util.zip.CheckedOutputStream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 public class Dexecrator {
+    static class EntryData
+    {
+        byte[] data;
+        ZipArchiveEntry entry;
+    };
+
     public static String jarPath;
     public static String outputPath;
 
@@ -317,16 +320,11 @@ public class Dexecrator {
         try {
             ZipArchiveInputStream in = new ZipArchiveInputStream(new FileInputStream(jarURL));
             ZipOutputStream zout = new ZipOutputStream(new CheckedOutputStream(new FileOutputStream(outputURL), new Adler32()));
+            HashMap<String, EntryData> zipEntries = new HashMap<String, EntryData>();
 
-            Field namesField = ZipOutputStream.class.getDeclaredField("names");
-            namesField.setAccessible(true);
-            HashSet<String> names = (HashSet<String>)namesField.get(zout);
-            namesField.setAccessible(false);
-
-            ZipArchiveEntry entry;
-            while ((entry = in.getNextZipEntry()) != null) {
-                // Check if file is needed
-                String name = entry.getName();
+            ZipArchiveEntry e;
+            while ((e = in.getNextZipEntry()) != null) {
+                String name = e.getName();
 
                 // Read class to byte array
                 ByteArrayOutputStream bOut = new ByteArrayOutputStream();
@@ -336,23 +334,31 @@ public class Dexecrator {
                 byte[] classData = bOut.toByteArray();
                 bOut.close();
 
+                EntryData entrydata = new EntryData();
+                entrydata.data = classData;
+                entrydata.entry = e;
+
+                zipEntries.put(name, entrydata);
+            }
+
+            for (EntryData entryData : zipEntries.values()) {
+                // Check if file is needed
+                String name = entryData.entry.getName();
+
                 System.out.println(name);
 
                 if (name.endsWith(".class"))
-                    classData = patch(classData);
+                    entryData.data = patch(entryData.data);
 
                 ZipEntry zipEntry = new ZipEntry(name);
                 zout.putNextEntry(zipEntry);
-
-                // HACK: Clear names to allow duplicate entries
-                names.clear();
-
-                zout.write(classData, 0, classData.length);
+                zout.write(entryData.data, 0, entryData.data.length);
                 zout.closeEntry();
             }
             in.close();
             zout.finish();
             zout.close();
+            zipEntries.clear();
         } catch (Exception e) {
             e.printStackTrace();
             return false;
