@@ -164,6 +164,17 @@ public class Dexecrator {
             while (insnNodeList.hasNext()) {
                 AbstractInsnNode insnNode = insnNodeList.next();
 
+                if (insnNode.getOpcode() == Opcodes.ATHROW) {
+                    methodNode.instructions.insert(
+                            insnNode,
+                            new MethodInsnNode(
+                                    Opcodes.INVOKESTATIC,
+                                    "java/android/lang/DetourException",
+                                    "HandleException",
+                                    "(Ljava/lang/Throwable;)Ljava/lang/Throwable;"));
+                    printPatch("Exception ATHROW", node, methodNode);
+                }
+
                 if (insnNode.getOpcode() == Opcodes.IRETURN) {
                     // Dalvik VM verifier patch, Java allows this but dalvik doesn't.
                     // Documented here: https://android.googlesource.com/platform/art/+/master/runtime/verifier/method_verifier.cc#2165
