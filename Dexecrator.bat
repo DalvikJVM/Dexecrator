@@ -7,7 +7,7 @@ rd /s /q %1.staging
 del /s %1.zip
 
 :: Run tools on jar
-java -cp "dist/Dexecrator.jar;lib/*" com.dalvikjvm.Dexecrator %1 %1.staging.jar
+java -cp "dist/*;lib/*" com.dalvikjvm.Dexecrator %1 %1.staging.jar
 java -cp "tools/d8.jar" com.android.tools.r8.D8 --min-api 26 --release --output %1.staging.zip %1.staging.jar
 
 :: Extract results
